@@ -8,6 +8,16 @@ from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection, WebSocketConnection  # noqa: F401
 from udacidrone.messaging import MsgID
 
+# Indexes inside the target_position[] datastructure.
+LON_IDX = 0
+LAT_IDX = 1
+ALT_IDX = 2
+
+# Indexes for NEAH data structures
+N_IDX = 0
+E_IDX = 1
+A_IDX = 2
+H_IDX = 3
 
 # The mission altitude (in meters)
 MISSION_ALT = 3
@@ -15,10 +25,15 @@ MISSION_ALT = 3
 # The legnth of one side of the mission square.
 SQUARE_SIDE_LENGTH = 10
 
-# Indexes inside the target_position[] datastructure.
-LON_IDX = 0
-LAT_IDX = 1
-ALT_IDX = 2
+# Target Coordinates for a square
+target_coords = [
+    [SQUARE_SIDE_LENGTH, 0, MISSION_ALT, 0],
+    [SQUARE_SIDE_LENGTH, SQUARE_SIDE_LENGTH, MISSION_ALT, 0],
+    [0, SQUARE_SIDE_LENGTH, MISSION_ALT, 0],
+    [0, 0, MISSION_ALT, 0]
+]
+
+LAST_WAYPOINT = len(target_coords)
 
 class States(Enum):
     MANUAL = 0
@@ -40,6 +55,7 @@ class BackyardFlyer(Drone):
 
         # initial state
         self.flight_state = States.MANUAL
+        self.waypoint_num = 0
 
         # TODO: Register all your callbacks here
         self.register_callback(MsgID.LOCAL_POSITION, self.local_position_callback)
@@ -63,14 +79,18 @@ class BackyardFlyer(Drone):
                 self.waypoint_transition()
 
         elif (self.flight_state == States.WAYPOINT):
-            pass
-            # Are we there yet? 
-            # No, then let it keep going. 
-            # Yes, is it last waypoint?
-            # No, then next waypoint
-            # Yes, then land.
 
-        
+            # Have we made it to the current target waypoint?
+            waypoint_north = target_coords[self.waypoint_num][N_IDX]
+            waypoint_east  = target_coords[self.waypoint_num][E_IDX]
+            if ((abs(self.local_position[N_IDX] - waypoint_north) < 1) and
+               (abs(self.local_position[E_IDX] - waypoint_east)) < 1):
+
+                if (self.waypoint_num == LAST_WAYPOINT):
+                    self.landing_transition()
+                else:
+                    self.waypoint_transition()
+
 
     def velocity_callback(self):
         """DONE
@@ -144,8 +164,15 @@ class BackyardFlyer(Drone):
         2. Transition to WAYPOINT state
         """
         print("waypoint transition")
-        self.cmd_position(10, 0, 3, 0)
+        north = target_coords[self.waypoint_num][N_IDX]
+        east  = target_coords[self.waypoint_num][E_IDX]
+        alt   = target_coords[self.waypoint_num][A_IDX]
+        hding = target_coords[self.waypoint_num][H_IDX]
+        print("Commanding [{}, {}, {}, {}]".format(north, east, alt, hding))
+        self.cmd_position(north, east, alt, hding)
         self.flight_state = States.WAYPOINT
+
+        self.waypoint_num += 1
 
     def landing_transition(self):
         """DONE
