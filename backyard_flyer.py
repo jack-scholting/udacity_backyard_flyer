@@ -12,6 +12,13 @@ from udacidrone.messaging import MsgID
 # The mission altitude (in meters)
 MISSION_ALT = 3
 
+# The legnth of one side of the mission square.
+SQUARE_SIDE_LENGTH = 10
+
+LON_IDX = 0
+LAT_IDX = 1
+ALT_IDX = 2
+
 class States(Enum):
     MANUAL = 0
     ARMING = 1
@@ -37,6 +44,8 @@ class BackyardFlyer(Drone):
         self.register_callback(MsgID.LOCAL_POSITION, self.local_position_callback)
         self.register_callback(MsgID.LOCAL_VELOCITY, self.velocity_callback)
         self.register_callback(MsgID.STATE, self.state_callback)
+
+    # TODO - the callbacks is where we change states.
 
     def local_position_callback(self):
         """
@@ -81,18 +90,18 @@ class BackyardFlyer(Drone):
 
         self.take_control()
         self.arm()
-        
+        self.set_home_position(self.global_position)
         self.flight_state = States.ARMING
 
     def takeoff_transition(self):
-        """TODO: Fill out this method
+        """TODO: DONE
         
         1. Set target_position altitude to 3.0m
         2. Command a takeoff to 3.0m
         3. Transition to the TAKEOFF state
         """
         print("takeoff transition")
-
+        self.target_position[ALT_IDX] = MISSION_ALT
         self.takeoff(MISSION_ALT)
         self.flight_state = States.TAKEOFF
 
@@ -107,7 +116,7 @@ class BackyardFlyer(Drone):
         self.flight_state = States.WAYPOINT
 
     def landing_transition(self):
-        """TODO: DONE
+        """DONE
         
         1. Command the drone to land
         2. Transition to the LANDING state
@@ -118,7 +127,7 @@ class BackyardFlyer(Drone):
         self.flight_state = States.LANDING
 
     def disarming_transition(self):
-        """TODO: DONE
+        """DONE
         
         1. Command the drone to disarm
         2. Transition to the DISARMING state
@@ -169,3 +178,7 @@ if __name__ == "__main__":
     drone = BackyardFlyer(conn)
     time.sleep(2)
     drone.start()
+    drone.arming_transition()
+    drone.target_position()
+
+
