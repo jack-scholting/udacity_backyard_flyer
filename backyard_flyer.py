@@ -9,6 +9,9 @@ from udacidrone.connection import MavlinkConnection, WebSocketConnection  # noqa
 from udacidrone.messaging import MsgID
 
 
+# The mission altitude (in meters)
+MISSION_ALT = 3
+
 class States(Enum):
     MANUAL = 0
     ARMING = 1
@@ -76,6 +79,11 @@ class BackyardFlyer(Drone):
         """
         print("arming transition")
 
+        self.take_control()
+        self.arm()
+        
+        self.flight_state = States.ARMING
+
     def takeoff_transition(self):
         """TODO: Fill out this method
         
@@ -85,6 +93,9 @@ class BackyardFlyer(Drone):
         """
         print("takeoff transition")
 
+        self.takeoff(MISSION_ALT)
+        self.flight_state = States.TAKEOFF
+
     def waypoint_transition(self):
         """TODO: Fill out this method
     
@@ -93,21 +104,29 @@ class BackyardFlyer(Drone):
         """
         print("waypoint transition")
 
+        self.flight_state = States.WAYPOINT
+
     def landing_transition(self):
-        """TODO: Fill out this method
+        """TODO: DONE
         
         1. Command the drone to land
         2. Transition to the LANDING state
         """
         print("landing transition")
 
+        self.land()
+        self.flight_state = States.LANDING
+
     def disarming_transition(self):
-        """TODO: Fill out this method
+        """TODO: DONE
         
         1. Command the drone to disarm
         2. Transition to the DISARMING state
         """
         print("disarm transition")
+
+        self.disarm()
+        self.flight_state = States.DISARMING
 
     def manual_transition(self):
         """This method is provided
