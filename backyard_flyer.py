@@ -159,26 +159,49 @@ class BackyardFlyer(Drone):
         2. Start the drone connection
         3. Close the log file
         """
-        print("Creating log file")
         self.start_log("Logs", "NavLog.txt")
+        # self.connect()
+
         print("starting connection")
-        self.connection.start()
-        print("Closing log file")
+        # self.connection.start()
+
+        super().start()
+
+        # Only required if they do threaded
+        # while self.in_mission:
+        #    pass
+
         self.stop_log()
+
+        # print("Creating log file")
+        # self.start_log("Logs", "NavLog.txt")
+        # print("starting connection")
+        # #self.connection.start()
+
+        # # Why was this in solution but not in template?
+        # print("Calling super().start()")
+        # super().start()
+
+        # print("Closing log file")
+        # self.stop_log()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5760, help='Port number')
-    parser.add_argument('--host', type=str, default='127.0.0.1', help="host address, i.e. '127.0.0.1'")
-    args = parser.parse_args()
-
-    conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), threaded=False, PX4=False)
-    #conn = WebSocketConnection('ws://{0}:{1}'.format(args.host, args.port))
+    conn = MavlinkConnection('tcp:127.0.0.1:5760', threaded=False, PX4=False)
+    #conn = WebSocketConnection('ws://127.0.0.1:5760')
     drone = BackyardFlyer(conn)
     time.sleep(2)
     drone.start()
-    drone.arming_transition()
-    drone.target_position()
 
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--port', type=int, default=5760, help='Port number')
+    # parser.add_argument('--host', type=str, default='127.0.0.1', help="host address, i.e. '127.0.0.1'")
+    # args = parser.parse_args()
 
+    # conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), threaded=False, PX4=False)
+    # conn = MavlinkConnection('tcp:127.0.0.1:5760', threaded=False, PX4=False)
+    # drone = BackyardFlyer(conn)
+    # time.sleep(2)
+    # drone.start()
+    # drone.arming_transition()
+    # drone.target_position()
