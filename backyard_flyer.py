@@ -20,20 +20,20 @@ A_IDX = 2
 H_IDX = 3
 
 # The mission altitude (in meters)
-MISSION_ALT = 3
+MISSION_ALT = 3.0
 
 # The legnth of one side of the mission square.
-SQUARE_SIDE_LENGTH = 10
+SQUARE_SIDE_LENGTH = 10.0
 
 # Target Coordinates for a square
 target_coords = [
-    [SQUARE_SIDE_LENGTH, 0, MISSION_ALT, 0],
-    [SQUARE_SIDE_LENGTH, SQUARE_SIDE_LENGTH, MISSION_ALT, 0],
-    [0, SQUARE_SIDE_LENGTH, MISSION_ALT, 0],
-    [0, 0, MISSION_ALT, 0]
+    [SQUARE_SIDE_LENGTH, 0.0, MISSION_ALT, 0.0],
+    [SQUARE_SIDE_LENGTH, SQUARE_SIDE_LENGTH, MISSION_ALT, 0.0],
+    [0.0, SQUARE_SIDE_LENGTH, MISSION_ALT, 0.0],
+    [0.0, 0.0, MISSION_ALT, 0.0]
 ]
 
-LAST_WAYPOINT = len(target_coords)
+LAST_WAYPOINT = len(target_coords) - 1
 
 class States(Enum):
     MANUAL = 0
@@ -57,17 +57,13 @@ class BackyardFlyer(Drone):
         self.flight_state = States.MANUAL
         self.waypoint_num = 0
 
-        # TODO: Register all your callbacks here
         self.register_callback(MsgID.LOCAL_POSITION, self.local_position_callback)
         self.register_callback(MsgID.LOCAL_VELOCITY, self.velocity_callback)
         self.register_callback(MsgID.STATE, self.state_callback)
 
     def local_position_callback(self):
-        """
-        TODO: Implement this method
-
+        """DONE
         This triggers when `MsgID.LOCAL_POSITION` is received and self.local_position contains new data
-
         """
         # If TAKEOFF, and altitude reached, then WAYPOINT.
         if (self.flight_state == States.TAKEOFF):
@@ -83,12 +79,20 @@ class BackyardFlyer(Drone):
             # Have we made it to the current target waypoint?
             waypoint_north = target_coords[self.waypoint_num][N_IDX]
             waypoint_east  = target_coords[self.waypoint_num][E_IDX]
-            if ((abs(self.local_position[N_IDX] - waypoint_north) < 1) and
-               (abs(self.local_position[E_IDX] - waypoint_east)) < 1):
+            #print("WAYPOINT POS: {}, {}".format(self.local_position[N_IDX], self.local_position[E_IDX]))
+
+            north_closeness = abs(self.local_position[N_IDX] - waypoint_north)
+            east_closeness  = abs(self.local_position[E_IDX] - waypoint_east)
+
+            #print("N {}, E {}".format(north_closeness, east_closeness))
+
+            if ((north_closeness < 1.0) and
+                (east_closeness < 1.0)):
 
                 if (self.waypoint_num == LAST_WAYPOINT):
                     self.landing_transition()
                 else:
+                    self.waypoint_num += 1
                     self.waypoint_transition()
 
 
@@ -129,6 +133,7 @@ class BackyardFlyer(Drone):
         
         1. Return waypoints to fly a box
         """
+        # Did it a different way, didn't need this function.
         pass
 
     def arming_transition(self):
@@ -158,7 +163,7 @@ class BackyardFlyer(Drone):
         self.flight_state = States.TAKEOFF
 
     def waypoint_transition(self):
-        """TODO: Fill out this method
+        """DONE
     
         1. Command the next waypoint position
         2. Transition to WAYPOINT state
@@ -171,8 +176,6 @@ class BackyardFlyer(Drone):
         print("Commanding [{}, {}, {}, {}]".format(north, east, alt, hding))
         self.cmd_position(north, east, alt, hding)
         self.flight_state = States.WAYPOINT
-
-        self.waypoint_num += 1
 
     def landing_transition(self):
         """DONE
@@ -219,11 +222,6 @@ class BackyardFlyer(Drone):
         self.start_log("Logs", "NavLog.txt")
         print("starting connection")
         self.connection.start() # ARGH, this looks to be blocking, of course.
-
-        # Why was this in solution but not in template?
-        # print("Calling super().start()")
-        # super().start()
-
         print("Closing log file")
         self.stop_log()
 
