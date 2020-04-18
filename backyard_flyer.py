@@ -159,31 +159,17 @@ class BackyardFlyer(Drone):
         2. Start the drone connection
         3. Close the log file
         """
+        print("Creating log file")
         self.start_log("Logs", "NavLog.txt")
-        # self.connect()
-
         print("starting connection")
-        # self.connection.start()
+        self.connection.start()
 
-        super().start()
-
-        # Only required if they do threaded
-        # while self.in_mission:
-        #    pass
-
-        self.stop_log()
-
-        # print("Creating log file")
-        # self.start_log("Logs", "NavLog.txt")
-        # print("starting connection")
-        # #self.connection.start()
-
-        # # Why was this in solution but not in template?
+        # Why was this in solution but not in template?
         # print("Calling super().start()")
         # super().start()
 
-        # print("Closing log file")
-        # self.stop_log()
+        print("Closing log file")
+        self.stop_log()
 
 
 if __name__ == "__main__":
