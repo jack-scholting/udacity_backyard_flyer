@@ -15,6 +15,7 @@ MISSION_ALT = 3
 # The legnth of one side of the mission square.
 SQUARE_SIDE_LENGTH = 10
 
+# Indexes inside the target_position[] datastructure.
 LON_IDX = 0
 LAT_IDX = 1
 ALT_IDX = 2
@@ -45,31 +46,63 @@ class BackyardFlyer(Drone):
         self.register_callback(MsgID.LOCAL_VELOCITY, self.velocity_callback)
         self.register_callback(MsgID.STATE, self.state_callback)
 
-    # TODO - the callbacks is where we change states.
-
     def local_position_callback(self):
         """
         TODO: Implement this method
 
         This triggers when `MsgID.LOCAL_POSITION` is received and self.local_position contains new data
+
         """
-        pass
+        # If TAKEOFF, and altitude reached, then WAYPOINT.
+        if (self.flight_state == States.TAKEOFF):
+            # coordinate conversion (local altitude is "down")
+            altitude = -1.0 * self.local_position[ALT_IDX]
+
+            # check if altitude is within 95% of target
+            if altitude > 0.95 * self.target_position[ALT_IDX]:
+                self.waypoint_transition()
+
+        elif (self.flight_state == States.WAYPOINT):
+            pass
+            # Are we there yet? 
+            # No, then let it keep going. 
+            # Yes, is it last waypoint?
+            # No, then next waypoint
+            # Yes, then land.
+
+        
 
     def velocity_callback(self):
-        """
-        TODO: Implement this method
-
+        """DONE
         This triggers when `MsgID.LOCAL_VELOCITY` is received and self.local_velocity contains new data
         """
-        pass
+        # Seems like this could work in the position interrupt too.
+        if (self.flight_state == States.LANDING):
+            # If we have reached the altitude of home (designed to handle non-0 home altitudes).
+            # global_position - real altitude
+            # global_home - saved GPS altitude of home
+            # local_position - distance away from home altitude.
+            if ((self.global_position[ALT_IDX] - self.global_home[ALT_IDX] < 0.1) and
+                (abs(self.local_position[ALT_IDX]) < 0.01)):
+                self.disarming_transition()
+
 
     def state_callback(self):
-        """
-        TODO: Implement this method
-
+        """DONE
         This triggers when `MsgID.STATE` is received and self.armed and self.guided contain new data
         """
-        pass
+        # Mostly taken from the UP/DOWN example.
+        # This should be how we get out of that blocking .start() call.
+        if not self.in_mission:
+            return
+        if self.flight_state == States.MANUAL:
+            self.arming_transition()
+        elif self.flight_state == States.ARMING:
+            if self.armed:
+                self.takeoff_transition()
+        elif self.flight_state == States.DISARMING:
+            if not self.armed:
+                self.manual_transition()
 
     def calculate_box(self):
         """TODO: Fill out this method
@@ -79,7 +112,7 @@ class BackyardFlyer(Drone):
         pass
 
     def arming_transition(self):
-        """TODO: Fill out this method
+        """DONE
         
         1. Take control of the drone
         2. Pass an arming command
@@ -87,14 +120,13 @@ class BackyardFlyer(Drone):
         4. Transition to the ARMING state
         """
         print("arming transition")
-
         self.take_control()
         self.arm()
-        self.set_home_position(self.global_position)
+        self.set_home_position(self.global_position[LON_IDX] ,self.global_position[LAT_IDX], self.global_position[ALT_IDX])
         self.flight_state = States.ARMING
 
     def takeoff_transition(self):
-        """TODO: DONE
+        """DONE
         
         1. Set target_position altitude to 3.0m
         2. Command a takeoff to 3.0m
@@ -112,7 +144,7 @@ class BackyardFlyer(Drone):
         2. Transition to WAYPOINT state
         """
         print("waypoint transition")
-
+        self.cmd_position(10, 0, 3, 0)
         self.flight_state = States.WAYPOINT
 
     def landing_transition(self):
@@ -122,7 +154,6 @@ class BackyardFlyer(Drone):
         2. Transition to the LANDING state
         """
         print("landing transition")
-
         self.land()
         self.flight_state = States.LANDING
 
@@ -133,7 +164,6 @@ class BackyardFlyer(Drone):
         2. Transition to the DISARMING state
         """
         print("disarm transition")
-
         self.disarm()
         self.flight_state = States.DISARMING
 
@@ -146,7 +176,6 @@ class BackyardFlyer(Drone):
         4. Transition to the MANUAL state
         """
         print("manual transition")
-
         self.release_control()
         self.stop()
         self.in_mission = False
@@ -162,7 +191,7 @@ class BackyardFlyer(Drone):
         print("Creating log file")
         self.start_log("Logs", "NavLog.txt")
         print("starting connection")
-        self.connection.start()
+        self.connection.start() # ARGH, this looks to be blocking, of course.
 
         # Why was this in solution but not in template?
         # print("Calling super().start()")
